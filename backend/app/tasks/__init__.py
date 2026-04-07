@@ -14,7 +14,12 @@ def collect_logs():
     """Background task to collect and parse SSH logs"""
     db: Session = SessionLocal()
     try:
-        log_reader = LogReaderService(settings.log_file_path)
+        log_reader = LogReaderService(settings.log_file_path, settings.log_offset_file_path)
+        logger.info(
+            "Starting SSH log collection from %s using offset file %s",
+            settings.log_file_path,
+            log_reader.offset_file,
+        )
         
         # Read new logs since last offset
         new_log_lines = log_reader.read_new_logs(
@@ -23,11 +28,12 @@ def collect_logs():
         )
         
         if not new_log_lines:
-            logger.debug("No new logs to process")
+            logger.info("No new SSH log lines found to process")
             return
         
         # Parse logs
         parsed_logs = log_reader.parse_logs(new_log_lines)
+        logger.info("Parsed %s SSH log lines from %s", len(parsed_logs), settings.log_file_path)
         
         # Store logs in database
         created_count = 0

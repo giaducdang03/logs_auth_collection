@@ -1,6 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const APP_BASE_URL = import.meta.env.BASE_URL || '/';
+const LOGIN_REDIRECT_PATH = APP_BASE_URL.endsWith('/')
+  ? `${APP_BASE_URL}login`
+  : `${APP_BASE_URL}/login`;
 
 export interface LoginRequest {
   username: string;
@@ -57,7 +61,7 @@ export class ApiClient {
         if (error.response?.status === 401) {
           // Clear token and redirect to login
           localStorage.removeItem('access_token');
-          window.location.href = '/login';
+          window.location.href = LOGIN_REDIRECT_PATH;
         }
         return Promise.reject(error);
       }

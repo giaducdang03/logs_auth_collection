@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     
     # Log Reader
     log_file_path: str = "/var/log/auth.log"
+    log_offset_file_path: str = "/state/.log_offset"
     log_reader_interval_minutes: int = 10
     log_reader_initial_days: int = 2
     log_reader_large_file_mb: int = 20

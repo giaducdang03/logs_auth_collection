@@ -4,6 +4,7 @@ from app.config import get_settings
 from app.database import Base, engine
 from app.api import router as auth_router
 from app.api.logs import router as logs_router
+from app.api.dashboard import router as dashboard_router
 from app.tasks import start_scheduler
 import logging
 
@@ -21,7 +22,22 @@ app = FastAPI(
     title="SSH Auth Log Monitor",
     description="API for SSH authentication log monitoring",
     version="1.0.0",
+    root_path=settings.backend_root_path,
 )
+
+
+@app.middleware("http")
+async def root_path_proxy_middleware(request, call_next):
+    """Support deployments where proxy forwards path with backend root prefix."""
+    root_prefix = (settings.backend_root_path or "").rstrip("/")
+    request_path = request.scope.get("path", "")
+
+    if root_prefix and request_path.startswith(root_prefix):
+        stripped_path = request_path[len(root_prefix):] or "/"
+        request.scope["root_path"] = root_prefix
+        request.scope["path"] = stripped_path
+
+    return await call_next(request)
 
 # Add CORS middleware
 app.add_middleware(
@@ -35,6 +51,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
 
 
 @app.on_event("startup")

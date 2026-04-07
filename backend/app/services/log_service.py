@@ -7,6 +7,20 @@ from app.schemas import SSHLogRecord, LogListResponse
 
 class LogService:
     """Service for SSH log operations"""
+
+    @staticmethod
+    def _to_record_payload(log_obj) -> dict:
+        """Convert ORM log object to plain payload with string IP address."""
+        return {
+            "id": log_obj.id,
+            "username": log_obj.username,
+            "ip_address": str(log_obj.ip_address) if log_obj.ip_address is not None else None,
+            "login_time": log_obj.login_time,
+            "status": log_obj.status,
+            "auth_method": log_obj.auth_method,
+            "ssh_key": log_obj.ssh_key,
+            "created_at": log_obj.created_at,
+        }
     
     @staticmethod
     def create_log(db: Session, log_data: dict) -> SSHLogRecord:
@@ -22,7 +36,7 @@ class LogService:
             return None  # Skip duplicate
         
         ssh_log = LogRepository.create_log(db, log_data)
-        return SSHLogRecord.model_validate(ssh_log)
+        return SSHLogRecord.model_validate(LogService._to_record_payload(ssh_log))
     
     @staticmethod
     def query_logs(
@@ -52,7 +66,10 @@ class LogService:
             sort_order=sort_order
         )
         
-        log_records = [SSHLogRecord.model_validate(log) for log in logs]
+        log_records = [
+            SSHLogRecord.model_validate(LogService._to_record_payload(log))
+            for log in logs
+        ]
         
         return LogListResponse(
             total=total,

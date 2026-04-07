@@ -28,6 +28,21 @@ class SSHLogParser:
             return datetime.now()
     
     @staticmethod
+    def extract_ssh_key(raw_log: str) -> Optional[str]:
+        """Extract SSH key info from log line (e.g., ssh2: ED25519 SHA256:...)"""
+        # Pattern: ssh2: ED25519 SHA256:OzMsdVj2smLr5dl5GQSXRJmdruwtf5Mfc18VRz7+IzQ
+        match = re.search(r"ssh2:\s+(\S+\s+\S+:\S+)$", raw_log)
+        if match:
+            return match.group(1).strip()
+        
+        # Alternative pattern without ssh2: prefix (some versions)
+        match = re.search(r"((?:ED25519|RSA|ECDSA|ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256)\s+SHA256:\S+)$", raw_log)
+        if match:
+            return match.group(1).strip()
+        
+        return None
+    
+    @staticmethod
     def parse_log_line(raw_log: str) -> Optional[Dict[str, Any]]:
         """
         Parse a single SSH log line
@@ -43,6 +58,7 @@ class SSHLogParser:
         
         if match1:
             timestamp_str, status, auth_method, username, ip_address = match1.groups()
+            ssh_key = SSHLogParser.extract_ssh_key(raw_log)
             
             return {
                 "username": username,
@@ -50,7 +66,7 @@ class SSHLogParser:
                 "login_time": SSHLogParser.parse_timestamp(timestamp_str),
                 "status": "success" if status == "Accepted" else "failed",
                 "auth_method": auth_method.lower(),
-                "ssh_key": None,
+                "ssh_key": ssh_key,
                 "raw_log": raw_log.strip(),
             }
         
@@ -63,6 +79,7 @@ class SSHLogParser:
         
         if match2:
             timestamp_str, username, ip_address = match2.groups()
+            ssh_key = SSHLogParser.extract_ssh_key(raw_log)
             
             return {
                 "username": username,
@@ -70,7 +87,7 @@ class SSHLogParser:
                 "login_time": SSHLogParser.parse_timestamp(timestamp_str),
                 "status": "failed",
                 "auth_method": "unknown",
-                "ssh_key": None,
+                "ssh_key": ssh_key,
                 "raw_log": raw_log.strip(),
             }
         
@@ -83,6 +100,7 @@ class SSHLogParser:
         
         if match3:
             timestamp_str, username, ip_address = match3.groups()
+            ssh_key = SSHLogParser.extract_ssh_key(raw_log)
             
             return {
                 "username": username,
@@ -90,7 +108,7 @@ class SSHLogParser:
                 "login_time": SSHLogParser.parse_timestamp(timestamp_str),
                 "status": "failed",
                 "auth_method": "password",
-                "ssh_key": None,
+                "ssh_key": ssh_key,
                 "raw_log": raw_log.strip(),
             }
         

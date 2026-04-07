@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # API
     api_prefix: str = "/api"
     api_v1_prefix: str = "/api/v1"
+    backend_root_path: str = ""
     
     # Environment
     environment: str = "development"
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        return f"postgresql+pg8000://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
 
 @lru_cache()

@@ -48,6 +48,7 @@ def collect_logs():
                     skipped_count += 1
             except Exception as e:
                 logger.error(f"Failed to store log: {str(e)}")
+                db.rollback()
                 skipped_count += 1
         
         logger.info(f"Log collection completed: {created_count} created, {skipped_count} skipped")

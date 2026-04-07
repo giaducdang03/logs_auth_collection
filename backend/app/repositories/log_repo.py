@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+from sqlalchemy import desc, and_, cast
+from sqlalchemy.dialects.postgresql import INET
 from datetime import datetime
 from typing import Optional, List, Tuple
 from app.models import SSHLog
@@ -13,21 +14,29 @@ class LogRepository:
         """Create a new SSH log entry"""
         ssh_log = SSHLog(**log_data)
         db.add(ssh_log)
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
         db.refresh(ssh_log)
         return ssh_log
     
     @staticmethod
     def log_exists(db: Session, username: str, ip_address: str, login_time: datetime, status: str) -> bool:
         """Check if log entry already exists (prevent duplicates)"""
-        return db.query(SSHLog).filter(
-            and_(
-                SSHLog.username == username,
-                SSHLog.ip_address == ip_address,
-                SSHLog.login_time == login_time,
-                SSHLog.status == status
-            )
-        ).first() is not None
+        filters = [
+            SSHLog.username == username,
+            SSHLog.login_time == login_time,
+            SSHLog.status == status,
+        ]
+
+        if ip_address is None:
+            filters.append(SSHLog.ip_address.is_(None))
+        else:
+            filters.append(SSHLog.ip_address == cast(ip_address, INET))
+
+        return db.query(SSHLog).filter(and_(*filters)).first() is not None
     
     @staticmethod
     def query_logs(

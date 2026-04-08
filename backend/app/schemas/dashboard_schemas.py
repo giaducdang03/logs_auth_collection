@@ -20,6 +20,12 @@ class UserFrequencyItem(BaseModel):
 class TopIPItem(BaseModel):
     ip_address: Optional[str]
     attempt_count: int
+    last_attempt_at: Optional[str] = None
+    country: Optional[str] = None
+    region: Optional[str] = None
+    city: Optional[str] = None
+    org: Optional[str] = None
+    location_label: Optional[str] = None
 
 
 class TotalStats(BaseModel):
@@ -34,12 +40,25 @@ class DateRange(BaseModel):
     end_date: str
 
 
+class RecentActivityItem(BaseModel):
+    login_time: str
+    username: Optional[str]
+    ip_address: Optional[str]
+    location_label: Optional[str]
+    org: Optional[str]
+    status: str
+    auth_method: Optional[str]
+
+
 class DashboardStatsResponse(BaseModel):
     date_range: DateRange
     granularity: Literal["day", "week", "month"]
     total_stats: TotalStats
     user_frequency: List[UserFrequencyItem]
     top_ips: List[TopIPItem]
+    top_success_ips: List[TopIPItem]
+    top_failed_ips: List[TopIPItem]
+    recent_activity: List[RecentActivityItem]
     timeline: List[TimelinePoint]
 
 

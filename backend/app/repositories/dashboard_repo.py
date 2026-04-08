@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, cast, and_, case
-from sqlalchemy.dialects.postgresql import INET
-from datetime import datetime, timedelta
+from sqlalchemy import func, desc, and_, case
+from datetime import datetime
 from typing import List, Tuple, Literal
 from app.models import SSHLog
 
@@ -53,7 +52,7 @@ class DashboardRepository:
         start_date: datetime,
         end_date: datetime,
         limit: int = 10,
-    ) -> List[Tuple[str, int]]:
+    ) -> List[Tuple[str, int, datetime]]:
         """
         Get top IP addresses by login attempts.
         
@@ -64,12 +63,13 @@ class DashboardRepository:
             limit: Number of top IPs to return
             
         Returns:
-            List of tuples (ip_address, attempt_count)
+            List of tuples (ip_address, attempt_count, last_attempt_at)
         """
         query = (
             db.query(
                 SSHLog.ip_address,
                 func.count(SSHLog.id).label("attempt_count"),
+                func.max(SSHLog.login_time).label("last_attempt_at"),
             )
             .filter(
                 and_(
@@ -79,7 +79,80 @@ class DashboardRepository:
                 )
             )
             .group_by(SSHLog.ip_address)
-            .order_by(desc("attempt_count"))
+            .order_by(desc("attempt_count"), desc("last_attempt_at"))
+            .limit(limit)
+        )
+        return query.all()
+
+    @staticmethod
+    def get_top_ips_by_status(
+        db: Session,
+        start_date: datetime,
+        end_date: datetime,
+        status: Literal["success", "failed"],
+        limit: int = 10,
+    ) -> List[Tuple[str, int, datetime]]:
+        """
+        Get top IP addresses by login attempts for a given status.
+
+        Args:
+            db: Database session
+            start_date: Start date filter
+            end_date: End date filter
+            status: Login status ('success' or 'failed')
+            limit: Number of top IPs to return
+
+        Returns:
+            List of tuples (ip_address, attempt_count, last_attempt_at)
+        """
+        query = (
+            db.query(
+                SSHLog.ip_address,
+                func.count(SSHLog.id).label("attempt_count"),
+                func.max(SSHLog.login_time).label("last_attempt_at"),
+            )
+            .filter(
+                and_(
+                    SSHLog.login_time >= start_date,
+                    SSHLog.login_time < end_date,
+                    SSHLog.ip_address.isnot(None),
+                    SSHLog.status == status,
+                )
+            )
+            .group_by(SSHLog.ip_address)
+            .order_by(desc("attempt_count"), desc("last_attempt_at"))
+            .limit(limit)
+        )
+        return query.all()
+
+    @staticmethod
+    def get_recent_activity(
+        db: Session,
+        start_date: datetime,
+        end_date: datetime,
+        limit: int = 5,
+    ) -> List[Tuple[datetime, str, str, str, str]]:
+        """
+        Get most recent login activities.
+
+        Returns:
+            List of tuples (login_time, username, ip_address, status, auth_method)
+        """
+        query = (
+            db.query(
+                SSHLog.login_time,
+                SSHLog.username,
+                SSHLog.ip_address,
+                SSHLog.status,
+                SSHLog.auth_method,
+            )
+            .filter(
+                and_(
+                    SSHLog.login_time >= start_date,
+                    SSHLog.login_time < end_date,
+                )
+            )
+            .order_by(desc(SSHLog.login_time))
             .limit(limit)
         )
         return query.all()

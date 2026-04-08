@@ -8,11 +8,13 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 interface UserFrequencyChartProps {
   data: UserFrequencyItem[];
   isLoading?: boolean;
+  className?: string;
 }
 
 export const UserFrequencyChart: React.FC<UserFrequencyChartProps> = ({
   data,
   isLoading = false,
+  className = '',
 }) => {
   if (isLoading) {
     return (
@@ -72,7 +74,7 @@ export const UserFrequencyChart: React.FC<UserFrequencyChartProps> = ({
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className={`h-full bg-white shadow rounded-lg p-6 ${className}`}>
       <Bar data={chartData} options={options} height={data.length * 30 + 100} />
     </div>
   );

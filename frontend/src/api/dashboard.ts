@@ -24,6 +24,8 @@ export interface DashboardStatsRequest {
   start_date?: string;
   end_date?: string;
   granularity?: Granularity;
+  top_success_limit?: number;
+  top_failed_limit?: number;
 }
 
 /**

@@ -29,16 +29,16 @@ export const Navbar: React.FC = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-3 sm:gap-4">
           <Link
-            to="/logs"
-            className="text-sm font-semibold text-slate-700 transition hover:text-slate-900"
-          >
-            Logs
-          </Link>
-          <Link
             to="/dashboard"
             className="text-sm font-semibold text-slate-700 transition hover:text-slate-900"
           >
             Dashboard
+          </Link>
+          <Link
+            to="/logs"
+            className="text-sm font-semibold text-slate-700 transition hover:text-slate-900"
+          >
+            Logs
           </Link>
           <span className="text-sm text-slate-600">Welcome, {username}!</span>
           <button

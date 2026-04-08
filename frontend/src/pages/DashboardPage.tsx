@@ -44,6 +44,8 @@ export const DashboardPage: React.FC = () => {
         start_date: filters.startDate,
         end_date: filters.endDate,
         granularity: filters.granularity,
+        top_success_limit: 5,
+        top_failed_limit: 5,
       });
 
       setStats(response);
@@ -114,23 +116,108 @@ export const DashboardPage: React.FC = () => {
         )}
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* User Frequency Chart */}
-          <div>
-            <UserFrequencyChart
-              data={stats?.user_frequency || []}
-              isLoading={isLoading}
-            />
+        <section className="mb-6 space-y-6">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
+            <div className="xl:col-span-1">
+              <UserFrequencyChart
+                data={stats?.user_frequency || []}
+                isLoading={isLoading}
+                className="min-h-[560px]"
+              />
+            </div>
+
+            <div className="xl:col-span-1">
+              <TopIPChart
+                data={stats?.top_success_ips || []}
+                isLoading={isLoading}
+                title="Top Successful IP Addresses"
+                datasetLabel="Success Count"
+                barColor="rgba(34, 197, 94, 0.8)"
+                borderColor="rgba(34, 197, 94, 1)"
+                className="min-h-[560px]"
+              />
+            </div>
+
+            <div className="xl:col-span-1">
+              <TopIPChart
+                data={stats?.top_failed_ips || []}
+                isLoading={isLoading}
+                title="Top Failed IP Addresses"
+                datasetLabel="Failed Count"
+                barColor="rgba(239, 68, 68, 0.8)"
+                borderColor="rgba(239, 68, 68, 1)"
+                className="min-h-[560px]"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Recent Activity */}
+        <section className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+              Recent Activity (Top 5)
+            </h2>
           </div>
 
-          {/* Top IP Chart */}
-          <div>
-            <TopIPChart data={stats?.top_ips || []} isLoading={isLoading} />
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Username</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">IP Address</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Auth Method</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {(stats?.recent_activity || []).map((item, idx) => (
+                  <tr key={`${item.login_time}-${item.ip_address}-${idx}`} className="transition hover:bg-slate-50">
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">{formatRecentTime(item.login_time)}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-black">{item.username || '-'}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-cyan-700">{item.ip_address || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700">
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{item.location_label || '-'}</span>
+                        {item.org && (
+                          <span className="rounded bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
+                            {item.org}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
+                          item.status === 'success'
+                            ? 'bg-emerald-100 text-emerald-800 ring-emerald-600/20'
+                            : 'bg-rose-100 text-rose-800 ring-rose-600/20'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm capitalize text-slate-600">{item.auth_method || 'unknown'}</td>
+                  </tr>
+                ))}
+
+                {!isLoading && (stats?.recent_activity || []).length === 0 && (
+                  <tr>
+                    <td className="px-4 py-6 text-center text-sm text-slate-500" colSpan={6}>
+                      No recent activity in selected range
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
+        </section>
 
         {/* Timeline Chart */}
-        <div>
+        <div className="mb-6">
           <TimelineChart
             data={stats?.timeline || []}
             granularity={filters.granularity}
@@ -180,4 +267,13 @@ function formatDateForInput(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function formatRecentTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString();
 }
